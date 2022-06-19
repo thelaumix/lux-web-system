@@ -1,0 +1,23 @@
+{
+  "name": "lux-web-system",
+  "version": "1.0.0",
+  "description": "Provides a full working environment for web-based applications, including SQL-Support, Frontend handling, REST-API Environment, Socket.io, Configurations and Sessions.",
+  "main": "main.js",
+  "author": "thelaumix",
+  "license": "MIT",
+  "peerDependencies": {
+    "body-parser": "^1.20.0",
+    "cors": "^2.8.5",
+    "express": "^4.18.1",
+    "express-ws": "^5.0.2",
+    "fs": "^0.0.1-security",
+    "https": "^1.0.0",
+    "mysql": "^2.18.1",
+    "socket.io": "^4.5.1",
+    "sql": "^0.78.0",
+    "yaml": "^2.1.1"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  }  
+}
