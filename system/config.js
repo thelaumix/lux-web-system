@@ -130,8 +130,8 @@ class Config extends ConfigSection {
      */
 	constructor(name, path = null) {
 		super();
-		if (path != null)
-			this._path = path;
+		if (path == true)
+			this._path = name;
 		else
 			this._path = `${P_CONFIG}${name}.yml`;
 		this.Reload();
@@ -202,3 +202,6 @@ module.exports = function(configs = [], path = false) {
 	Log(LOG_PRE, "Built configuration tree")
 	return buffer;
 }
+
+
+module.exports.Class = Config;

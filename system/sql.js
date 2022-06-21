@@ -88,7 +88,7 @@ class SQL {
                         Con.on("error", function(err){
                             Connected = false;
                             Con = null;
-                            if (err.name == "ECONNRESET")
+                            if (err.name == "ECONNRESET" || err.code == 'ECONNRESET')
                                 Log(LOG_PRE, "CONNECTION RESET")
                             else
                                 Log(LOG_PRE, "CONNECTION ERROR:", err);

@@ -20,7 +20,7 @@ const LxWebApplication = options => {
           CreateSql     = require('./system/sql.js'),
           WebSystem     = require('./system/websys.js'),
           {Assign}      = require('./system/utils.js'),
-          {dirname}     = require('path');
+          {dirname}     = require('path'),
           $             = require('./system/lane.js'),
           fs            = require('fs'),
           ROOT_DIR      = dirname(require.main.filename);
@@ -47,6 +47,9 @@ const LxWebApplication = options => {
                 key: null,
                 cert: null
             },
+            session: false,
+            session_expire_time: 3600,
+            session_domain: null,
             server: {
                 port: 8080,
                 frontend: '/web',
@@ -112,7 +115,10 @@ const LxWebApplication = options => {
                 },
                 workspace: OPTIONS.directories.workspace,
                 port: OPTIONS.server.port,
-                api_cors: OPTIONS.api_cors
+                api_cors: OPTIONS.api_cors,
+                session: OPTIONS.session,
+                session_expire_time: OPTIONS.session_expire_time,
+                session_domain: OPTIONS.session_domain
             });
             // Put webserver on lane
             $.Web = Web;

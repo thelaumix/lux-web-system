@@ -134,6 +134,12 @@ module.exports = (options = {}) => {
         })
 
         /**
+         * Initialization of Session Middleware, if needed
+         */
+        const SessionInstance = options.session ? require('./session.js')(options.session_expire_time, options.session_domain) : null;
+        options.session_expire_time ? WebLog("Using sessions") : null;
+
+        /**
          * API Setup functionator
          * Sets up dynamic API router and all calls contained within it
          */
@@ -152,6 +158,21 @@ module.exports = (options = {}) => {
                     credentials: true
                 }));
                 WebLog("Using API-Cors Origin", Color.FgCyan + "https://" + options.api_cors + Color.Reset)
+            }
+
+            /**
+             * If Session enabled, set session
+             */
+            if (options.session === true) {
+                /**
+                 * Include cookie parser
+                 */
+                ROUTE_API.use(require('cookie-parser')());
+
+                /**
+                 * SESSION Middleware
+                 */
+                ROUTE_API.use(SessionInstance)
             }
             
             /**
@@ -172,7 +193,12 @@ module.exports = (options = {}) => {
 
                 // Try to set up provided information on API router
                 try {
-                    ROUTE_API[method.toLowerCase()](path, callback);
+                    ROUTE_API[method.toLowerCase()](path, async (req, res) => {
+                        // Awaiting the provided callback
+                        await callback(req, res);
+                        // Trigger save session if enabled
+                        if (req.session) req.session.Save();
+                    });
                     WebLog("API: Registered", Color.FgGreen + method.toLowerCase() + Color.Reset, "on", Color.FgMagenta + path + Color.Reset);
                     return true;
                 } catch (e) {
