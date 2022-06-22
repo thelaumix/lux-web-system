@@ -125,6 +125,7 @@ const {Call, Socket, Page} = Lux({
 		- `event` The event that should be sent to the server
 		- `...args` All arguments that should be passed with the event
 	- `.On(event, callback)`<br>Registers a global callback for when the server sends an event
+	- `Connection(callback)`<br>Registers a callback for connection changes. Passed `true` on connection, `false` on disconnection
 - `Page(path)`<br>Dynamic URL handling. Calling this function switches to the desired path without reloading the page. Path changes, as well as Browser Navigation Events, can be handled with:
 - `Page(callback)`<br>This should **always happen first**. Within this function you can handle what happens if a specific URL has been called.
 - `Page.Args`<br>Array that contains all arguments of the path (`/arg0/arg1/arg2 ...`)<br>Will be updated *before the page handle callback is invoked*
