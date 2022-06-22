@@ -90,6 +90,8 @@ module.exports = (options = {}) => {
              * Connection listener
              */
             io.on("connection", (socket) => {
+
+                const SOCK_STORAGE = {};
                 
                 try {
                     require(P_SOCK)(
@@ -105,6 +107,7 @@ module.exports = (options = {}) => {
                         () => $.Query(...arguments), 
                         {...$.Conf}, 
                         {...Util},
+                        SOCK_STORAGE
                     );
                 } catch (e) {
                     WebLog(Color.BgRed + Color.FgBlack + "SOCKET Initialization error" + Color.Reset);

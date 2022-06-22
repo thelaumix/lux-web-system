@@ -171,7 +171,7 @@ module.exports = (On, Log, Query, Conf, Util, Emit) => {
 
 Works similar to `api.js`, but with a slightly different handler function:
 ```js
-module.exports = (On, Log, Query, Conf, Util) => {
+module.exports = (On, Log, Query, Conf, Util, Storage) => {
 	On('test', data  => {
 		Log("Received data", data)
 		return {received:  data, time:  Util.time()};
@@ -181,6 +181,7 @@ module.exports = (On, Log, Query, Conf, Util) => {
 - `On(event, handler)`<br>Registers an event handler at the socket.io instance
 	- `event` Name of the event the server should listen to
 	- `handler(data)` Handler function that returns the response sent back to the requesting client.
+- `Storage` A socket unique storage object 
 - *All other fields identical to api.js*
 
 
