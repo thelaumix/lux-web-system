@@ -157,7 +157,7 @@ const LxWebApplication = options => {
     //#endregion
 
     return {
-        Query: (...args) => SQL.Query(...args),
+        Query: SQL.Query,
         Conf: {...Conf},
         Log: (...args) => Log(...args),
         Color: {...Color}
