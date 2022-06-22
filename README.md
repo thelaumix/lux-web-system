@@ -1,5 +1,6 @@
 # LUX Web System
 
+Entirely node.js based web framework including REST API and socket.io support, script compression and SQL integration.
 
 ## Basic Usage
 
