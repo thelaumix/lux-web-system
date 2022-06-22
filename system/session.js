@@ -38,7 +38,6 @@ module.exports = (EXPIRE_TIME = 3600, DOMAIN = null) => {
                      * Create a new session if none recognized or session expired
                      */
                     function NewSession() {
-                        console.log("Creating new session id at request", req.method)
                         ID = uuid().replace(/[\-]+/ig, "");
                         P = PATH + "/" + ID;
                         Buffer = {};
