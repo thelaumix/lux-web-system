@@ -84,8 +84,7 @@ module.exports = (EXPIRE_TIME = 3600, DOMAIN = null) => {
                  * Session save
                  */
                 req.session.Save = () => {
-                    if (fs.existsSync(P))
-                        fs.writeFileSync(P, JSON.stringify(Buffer));
+                    fs.writeFileSync(P, JSON.stringify(Buffer));
                 }
                 next();
           };

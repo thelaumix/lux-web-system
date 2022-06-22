@@ -161,7 +161,19 @@ module.exports = (options = {}) => {
             if (typeof options.api_cors === 'string') {
                 ROUTE_API.use(cors({
                     origin: "https://" + options.api_cors,
-                    credentials: true
+                    credentials: true,
+                    methods: [
+                        'GET',
+                        'POST',
+                        'PUT',
+                        'PATCH',
+                        'DELETE',
+                        'HEAD',
+                        'OPTIONS'
+                    ],
+                    allowedHeaders: [
+                        'Content-Type',
+                    ]
                 }));
                 WebLog("Using API-Cors Origin", Color.FgCyan + "https://" + options.api_cors + Color.Reset)
             }
