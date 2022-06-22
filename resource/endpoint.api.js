@@ -5,8 +5,8 @@
  */
 
 module.exports = (On, Log, Query, Conf, Util, Emit) => {
-    Log("Hey, an API log")
     On('get', '/test', (req, res) => {
+        Log("Hey, an API log")
         res.json({
             result: "This is an example response",
             second_value: 11880

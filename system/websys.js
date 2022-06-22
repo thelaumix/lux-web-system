@@ -6,7 +6,13 @@ const express       = require('express'),
       path          = require('path'),
       {Log, Color}  = require('./console.js'),
       Util          = require('./utils.js'),
-      $             = require('./lane.js');
+      glob          = require('glob'),
+      $             = require('./lane.js'),
+      minify        = require('@node-minify/core'),
+      COMPRESSORS = {
+            js:     require('@node-minify/terser'),
+            css:    require('@node-minify/clean-css')
+      }
 
 const METHODS_ALLOWED   = ['get', 'post', 'put', 'patch', 'delete', 'all'];
 
@@ -219,7 +225,7 @@ module.exports = (options = {}) => {
                     // Sending just mere copies of the fields to prevent overwriting the internal fields
                     (...args) => RegisterApi(...args),
                     (...args) => {WebLog(Color.FgYellow + "API", ...args)}, 
-                    () => $.Query(...arguments), 
+                    (...args) => $.Query(...args), 
                     {...$.Conf}, 
                     {...Util},
                     (event, ...args) => {
@@ -310,10 +316,61 @@ module.exports = (options = {}) => {
         /**
          * Routing web frontend file manager to /web directive
          */
-         app.use(options.paths.frontend, (req, res, next) => {
+         app.use(options.paths.frontend, async (req, res, next) => {
             let pth = req.path.substring(1),
                 waspl = pth.split(':'),
-                finpath = WS_FRONT;
+                finpath = WS_FRONT,
+                tmpdir = path.resolve(__dirname + '/../tmp');
+
+            /**
+             * Globals the requested file group
+             * @param {string} target Filename to search 
+             */
+            const ParseGlobal = async (target) => {
+                let tsplit = target.split('.');
+                const file_pattern = `/${tsplit[tsplit.length -1]}/${tsplit[0]}.*?(.)${tsplit[tsplit.length -1]}`,
+                      templateFile = tmpdir + `/${tsplit[0]}.${tsplit[tsplit.length -1]}`;
+                // Look for the requested files in the frontend folder
+                let flist = glob.sync(file_pattern, {
+                    root: WS_FRONT
+                })
+
+                if (flist.length <= 0) {
+                    finpath = false;
+                    return false;
+                }
+                
+                // Check for file parting times
+                let youngest = 0;
+                for(let file of flist) {
+                    const y = fs.statSync(file).mtimeMs
+                    if (youngest < y) youngest = y;
+                }
+
+                // If no tempfile existing or temp is older than youngest subfile
+                if (!fs.existsSync(templateFile) || fs.statSync(templateFile).mtimeMs < youngest) {
+                    if (!fs.existsSync(tmpdir)) fs.mkdirSync(tmpdir)
+
+                    // Try compressing
+                    try {
+                        // Compressing the buffer
+                        await minify({
+                            compressor: COMPRESSORS[tsplit[tsplit.length - 1]],
+                            input: path.join(WS_FRONT, file_pattern),
+                            output: templateFile,
+                            options: {
+                                warnings: true, // pass true to display compressor warnings.
+                                mangle: true, // pass false to skip mangling names.
+                                compress: false // pass false to skip compressing entirely. Pass an object to specify custom compressor options.
+                            }
+                        })
+                    } catch (e) {
+                        WebLog("PARSING ERROR:", e);
+                    }
+                }
+
+                finpath = templateFile;
+            }
 
             // Serve the socket.io root file
             if (pth == 'js:lux.js') {
@@ -330,9 +387,9 @@ module.exports = (options = {}) => {
 
             // Declare which type of path to load
             else if (waspl[0] == 'css') {
-                finpath += "css/" + pth.substring(4);
+                await ParseGlobal(pth.substring(4));
             } else if (waspl[0] == 'js') {
-                finpath += "js/" + pth.substring(3);
+                await ParseGlobal(pth.substring(3));
             } else if (waspl[0] == 'img') {
                 finpath += "img/" + pth.substring(4);
             } else {
@@ -370,6 +427,7 @@ module.exports = (options = {}) => {
          * Web Server Control Unit that allows to operate the server
          */
         return {
+            App: app,
             Log: WebLog
         }
 

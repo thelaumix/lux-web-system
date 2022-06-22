@@ -5,6 +5,10 @@ const $             = require('./lane.js'),
       {Log, Color}  = require('./console.js'),
       Util          = require('./utils.js');
 
+/**
+ * Session Log function
+ * @param  {...any} args Elements to print
+ */
 function SesLog(...args) {
     Log(Color.FgMagenta + "Session", ...args);
 }
@@ -14,18 +18,25 @@ module.exports = (EXPIRE_TIME = 3600, DOMAIN = null) => {
     const PATH   = path.resolve(__dirname + "/../.session/");
     if (!fs.existsSync(PATH)) fs.mkdirSync(PATH);
 
+    /**
+     * Session middleware for express
+     */
     const RETURN = async (req, res, next) => {
                 var P = false,
                     Buffer = {},
                     ID,
                     changedSomething = false;
                 
+                /**
+                 * Session set up
+                 */
                 function SetUpSession() {
                     ID = req.cookies.GSESS;
                     P = PATH + "/" + ID;
 
-                    // Check for file
-
+                    /**
+                     * Create a new session if none recognized or session expired
+                     */
                     function NewSession() {
                         console.log("Creating new session id at request", req.method)
                         ID = uuid().replace(/[\-]+/ig, "");
@@ -38,6 +49,9 @@ module.exports = (EXPIRE_TIME = 3600, DOMAIN = null) => {
                         fs.writeFileSync(P, JSON.stringify(Buffer));
                     }
 
+                    /**
+                     * Check for existance or set up
+                     */
                     if (!ID || !fs.existsSync(P)) {
                         NewSession();
                     } else if (Math.round((Date.now() - fs.statSync(P).mtime.getTime()) / 1000) >= EXPIRE_TIME) {
@@ -50,6 +64,12 @@ module.exports = (EXPIRE_TIME = 3600, DOMAIN = null) => {
                     }
                 }
 
+                /**
+                 * Session getter / Setter
+                 * @param {*} key Session storage key
+                 * @param {*} write Session storage value
+                 * @returns If write is unset, return value at key in Session
+                 */
                 req.session = (key, write) => {
                     if (P === false) SetUpSession();
 
@@ -61,12 +81,18 @@ module.exports = (EXPIRE_TIME = 3600, DOMAIN = null) => {
                     }
                 }
 
+                /**
+                 * Session save
+                 */
                 req.session.Save = () => {
                     fs.writeFileSync(P, JSON.stringify(Buffer));
                 }
                 next();
           };
 
+    /**
+     * Cleanup function to delete all session files older than session expire time
+     */
     this.Cleanup = async () => {
         SesLog("Starting session cleanup routine...")
         const now = Date.now();
@@ -81,6 +107,9 @@ module.exports = (EXPIRE_TIME = 3600, DOMAIN = null) => {
         SesLog("Cleanup routine ended")
     }
 
+    /**
+     * Initiating session cleanup
+     */
     this.CleanupInterval = setInterval(this.Cleanup, 60000 * 60 * 3);
     this.Cleanup();
 

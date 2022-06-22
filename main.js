@@ -12,7 +12,6 @@
  */
 const LxWebApplication = options => {
 
-
     //#region Imports
 
     const {Log, Color}  = require('./system/console.js'),
@@ -28,6 +27,12 @@ const LxWebApplication = options => {
     //#endregion
 
     //#region Prepare
+
+        if (ALREADY_LOADED !== false) {
+            Log(Color.BgRed + Color.FgBlack + " DUPLICATE INSTANCES IS NOT ALLOWED " + Color.Reset);
+            return null;
+        }
+        ALREADY_LOADED = true;
 
         // WELCOME - Clear screen
         console.log("\033[2J");
@@ -152,12 +157,13 @@ const LxWebApplication = options => {
     //#endregion
 
     return {
-        Query: SQL.Query,
-        Conf,
-        Web,
-        Log,
-        Color
+        Query: (...args) => SQL.Query(...args),
+        Conf: {...Conf},
+        Log: (...args) => Log(...args),
+        Color: {...Color}
     };
 };
+
+var ALREADY_LOADED = false;
 
 module.exports = LxWebApplication;
