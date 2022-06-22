@@ -237,7 +237,7 @@ module.exports = (options = {}) => {
                     // Sending just mere copies of the fields to prevent overwriting the internal fields
                     (...args) => RegisterApi(...args),
                     (...args) => {WebLog(Color.FgYellow + "API", ...args)}, 
-                    (...args) => $.Query(...args), 
+                    $.Query,
                     {...$.Conf}, 
                     {...Util},
                     (event, ...args) => {
