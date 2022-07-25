@@ -1,6 +1,6 @@
 {
   "name": "lux-web-system",
-  "version": "1.0.19",
+  "version": "1.0.20",
   "description": "Provides a full working environment for web-based applications, including SQL-Support, Frontend handling, REST-API Environment, Socket.io, Configurations and Sessions.",
   "main": "main.js",
   "author": "thelaumix",

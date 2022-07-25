@@ -52,7 +52,7 @@ function arMerge( target, data ){
 }
 
 function arPlain(obj){
-    return obj !== undefined 
+    return obj != null && obj !== undefined 
 		&& obj.constructor !== undefined 
 		&& obj.constructor.prototype === Object.prototype;
 }
