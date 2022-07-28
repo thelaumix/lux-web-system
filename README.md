@@ -37,7 +37,7 @@ const options = {
 	},
 	api_cors: false
 }
-const {Query, Conf, Log, Color} = LxWebApplication(options);
+const {Query, Conf, Log, Color, Use} = LxWebApplication(options);
 ```
 
 The application initializer will create all directories needed and furthermore returns some useful functions to interact with the running server. These functions are:
@@ -45,6 +45,7 @@ The application initializer will create all directories needed and furthermore r
 - `Conf` Configuration holder. Contains all configuration elements named by the pattern defined in the `configs`-section within the options object (Case Sensitive)<br>For example the "program.yml" configuration from the default options will be accessible at `Conf.Program`
 - `Log` Strongly recommended to use this instead of `console.log`.<br>**Usage**: `Log(env_name, ...args)`
 - `Color` Console color holder. See reference for more.
+- `Use` Acts identically to express `app.use(..)`. Simply call `Use(..)` instead.
 
 Please try not to overwrite these functions, because a second call of the LxWebApplication function is not possible.
 

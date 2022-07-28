@@ -160,7 +160,8 @@ const LxWebApplication = options => {
         Query: SQL.Query,
         Conf: {...Conf},
         Log: (...args) => Log(...args),
-        Color: {...Color}
+        Color: {...Color},
+        Use: WebSystem.App.use
     };
 };
 
