@@ -161,7 +161,7 @@ const LxWebApplication = options => {
         Conf: {...Conf},
         Log: (...args) => Log(...args),
         Color: {...Color},
-        Use: WebSystem.App.use
+        Use: Web.App.use
     };
 };
 
