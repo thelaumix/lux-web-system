@@ -161,7 +161,9 @@ const LxWebApplication = options => {
         Conf: {...Conf},
         Log: (...args) => Log(...args),
         Color: {...Color},
-        Use: Web.App.use
+        Use: () => {
+            Log(ENV_NAME, "The Use() middleware support is currently disabled due to maintanance issues. May be reenabled in future updates.")
+        }
     };
 };
 
