@@ -200,10 +200,10 @@ module.exports = (options = {}) => {
              * Registers an endpoint on the API router
              * @param {HTTPMethodString} method Type of the method 
              * @param {string} path The target path in express format
-             * @param {function} callback Callback (req, res)
+             * @param {function} cbs Callbacks (req, res, next)
              * @returns {boolean} If registration process was successful
              */
-            function RegisterApi(method, path, callback) {
+            function RegisterApi(method, path, ...cbs) {
                 // Check for integrity of target method
                 if (typeof method !== 'string' || METHODS_ALLOWED.indexOf(method.toLowerCase()) < 0) {
                     WebLog("Could not register API endpoint of method " + 
@@ -214,12 +214,14 @@ module.exports = (options = {}) => {
 
                 // Try to set up provided information on API router
                 try {
-                    ROUTE_API[method.toLowerCase()](path, async (req, res) => {
+                    const cbLast = cbs.pop();
+                    cbs.push(async (req, res) => {
                         // Awaiting the provided callback
-                        await callback(req, res);
+                        await cbLast(req, res);
                         // Trigger save session if enabled
                         if (req.session) req.session.Save();
-                    });
+                    })
+                    ROUTE_API[method.toLowerCase()](path, ...cbs);
                     WebLog("API: Registered", Color.FgGreen + method.toLowerCase() + Color.Reset, "on", Color.FgMagenta + path + Color.Reset);
                     return true;
                 } catch (e) {
