@@ -9,6 +9,8 @@ const express       = require('express'),
       glob          = require('glob'),
       $             = require('./lane.js'),
       minify        = require('@node-minify/core'),
+      ddos          = require("ddos-express"),
+      uuid          = require('uuid').v1,
       COMPRESSORS = {
             js:     require('@node-minify/terser'),
             css:    require('@node-minify/clean-css')
@@ -25,6 +27,8 @@ function WebLog(...args) {
  * @param {object} options Options for the server
  * @param {string} options.cert Path to the SSL certificate file
  * @param {string} options.key Path to the SSL private key file
+ * @param {string} options.ddos DDOS options
+ * @param {string} options.template_fields Template parsing fields
  */
 module.exports = (options = {}) => {
     //#region Initialization
@@ -41,6 +45,8 @@ module.exports = (options = {}) => {
             }, app).listen(port);
         
         WebLog("Server running on port", port);
+
+        const ddosFunc = ddos(options.ddos);
 
     //#endregion
 
@@ -156,6 +162,7 @@ module.exports = (options = {}) => {
             WebLog("Loading API endpoints...")
             // Reset router
             ROUTE_API = express.Router();
+            ROUTE_API.use(ddosFunc);
             ROUTE_API.use(bodyParser.json());
 
             /**
@@ -333,11 +340,25 @@ module.exports = (options = {}) => {
         /**
          * Routing web frontend file manager to /web directive
          */
-         app.use(options.paths.frontend, async (req, res, next) => {
+         app.use(options.paths.frontend, ddosFunc, async (req, res, next) => {
             let pth = req.path.substring(1),
                 waspl = pth.split(':'),
                 finpath = WS_FRONT,
                 tmpdir = path.resolve(__dirname + '/../tmp');
+
+            
+            /**
+             * Parses a String onto the passed template fields
+             * @param {*} string The input string that should be parsed
+             * @returns The parsed string
+             */
+            const ParseTemplates = (string) => {
+                for(const template_id in options.template_fields) {
+                    const regex = new RegExp('\\{\\{' + template_id + '\\}\\}', 'gm');
+                    string = string.replace(regex, options.template_fields[template_id]);
+                }
+                return string;
+            }
 
             /**
              * Globals the requested file group
@@ -368,12 +389,22 @@ module.exports = (options = {}) => {
                 if (!fs.existsSync(templateFile) || fs.statSync(templateFile).mtimeMs < youngest) {
                     if (!fs.existsSync(tmpdir)) fs.mkdirSync(tmpdir)
 
+                    // Create temporary template-rendered file
+                    const tempfile_name = tmpdir + `/${uuid()}`;
+                    // Iterate files again, read them and parse the content to template fields
+                    for(let file of flist) {
+                        const data = fs.readFileSync(file, 'utf-8');
+
+                        // Append templated file to the parsing temp file
+                        fs.appendFileSync(tempfile_name, ParseTemplates(data) + "\n");
+                    }
+
                     // Try compressing
                     try {
                         // Compressing the buffer
                         await minify({
                             compressor: COMPRESSORS[tsplit[tsplit.length - 1]],
-                            input: path.join(WS_FRONT, file_pattern),
+                            input: tempfile_name, //path.join(WS_FRONT, file_pattern),
                             output: templateFile,
                             options: {
                                 warnings: true, // pass true to display compressor warnings.
@@ -384,6 +415,8 @@ module.exports = (options = {}) => {
                     } catch (e) {
                         WebLog("PARSING ERROR:", e);
                     }
+
+                    fs.unlink(tempfile_name);
                 }
 
                 finpath = templateFile;

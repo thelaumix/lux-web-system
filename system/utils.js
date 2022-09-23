@@ -1,9 +1,9 @@
-module.exports.time = function() {
-    return Math.round(Date.now() / 1000);
+module.exports.time = function(ms = null) {
+    return Math.round(ms || Date.now() / 1000);
 }
 
-module.exports.daystamp = function() {
-	return Math.floor(time() / (60*60*24));
+module.exports.daystamp = function(ts = null) {
+	return Math.floor(time(ts) / (60*60*24));
 }
 
 module.exports.Wait = function(ms) {

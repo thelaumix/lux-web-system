@@ -60,7 +60,14 @@ const LxWebApplication = options => {
                 frontend: '/web',
                 endpoint: '/api'
             },
-            api_cors : false
+            api_cors : false,
+            ddos: {
+                weight: 1,
+                maxWeidht: 10,
+                checkInterval: 1000,
+                rules: []
+            },
+            template_fields: {}
         }, options || {})
 
         OPTIONS.directories.config    = ROOT_DIR + OPTIONS.directories.config
@@ -123,7 +130,9 @@ const LxWebApplication = options => {
                 api_cors: OPTIONS.api_cors,
                 session: OPTIONS.session,
                 session_expire_time: OPTIONS.session_expire_time,
-                session_domain: OPTIONS.session_domain
+                session_domain: OPTIONS.session_domain,
+                ddos: OPTIONS.ddos,
+                template_fields: OPTIONS.template_fields
             });
             // Put webserver on lane
             $.Web = Web;
