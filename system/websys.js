@@ -416,7 +416,9 @@ module.exports = (options = {}) => {
                         WebLog("PARSING ERROR:", e);
                     }
 
-                    fs.unlink(tempfile_name);
+                    fs.unlink(tempfile_name, (err) => {
+                        if (err) console.error(err);
+                    });
                 }
 
                 finpath = templateFile;
