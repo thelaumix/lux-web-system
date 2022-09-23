@@ -119,7 +119,7 @@ const LxWebApplication = options => {
 
         //#region Setup: WebSystem
 
-            const Web = WebSystem({
+            const Web = WebSystem(Conf, {
                 ssl: OPTIONS.ssl,
                 paths: {
                     frontend: OPTIONS.server.frontend,

@@ -78,7 +78,7 @@ The following options are available to modify the initializer of LxWebApplicatio
   - `frontend` *: string*<br>URL where the frontend will be found. **Not** ending with **/**
   - `endpoint` *: string*<br>URL where the endpoint and the socket will be found. **Not** ending with **/**
 - `api_cors` *: string*<br>Defaults to `false` meaning that no CORS policy will be loaded<br>If set to a domain string, API will use this domain string as CORS policy domain
-- `template_fields` *: Object*<br>Assign the fields for the template replacement to assign. This replacement is primarily dedicated to CSS and JS resource files.
+- `template_fields` *: Object | string*<br>Assign the fields for the template replacement to assign. This replacement is primarily dedicated to CSS and JS resource files.<br>If is a **string**, it will specify a config file and path to look after. This shall be provided in the format `confname:path.to.holder` *(with `confname` being the name of the config file)*. If there is no sub object that holds the field information, the path can be left empty: `confname:`
 
 ## Working with the FRONTEND
 The fronend working environment can be found inside the folder `frontend`, generated inside of `directories.workspace`. Its structure must not be changed and looks like this:

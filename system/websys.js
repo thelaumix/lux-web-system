@@ -30,7 +30,7 @@ function WebLog(...args) {
  * @param {string} options.ddos DDOS options
  * @param {string} options.template_fields Template parsing fields
  */
-module.exports = (options = {}) => {
+module.exports = (Conf, options = {}) => {
     //#region Initialization
 
         WebLog("Starting up WebSystem...")
@@ -353,9 +353,26 @@ module.exports = (options = {}) => {
              * @returns The parsed string
              */
             const ParseTemplates = (string) => {
-                for(const template_id in options.template_fields) {
+
+                let fields = options.template_fields;
+                if (typeof fields === 'string') {
+                    // Try to get from config
+                    const field_split = fields.split(':');
+                    if (field_split.length != 2) fields = {};
+                    else {
+                        if (Conf[field_split[0]] == null) fields = {}
+                        else {
+                            const conf = Conf[field_split[0]];
+                            const path = field_split[1].trim();
+                            if (path.length == 0) fields = {...conf._data};
+                            else fields = conf.GetSection(path)._data;
+                        }
+                    }
+                } else if (typeof fields !== 'object') return string;
+
+                for(const template_id in fields) {
                     const regex = new RegExp('\\{\\{' + template_id + '\\}\\}', 'gm');
-                    string = string.replace(regex, options.template_fields[template_id]);
+                    string = string.replace(regex, fields[template_id]);
                 }
                 return string;
             }
