@@ -105,7 +105,8 @@ module.exports = (Conf, options = {}) => {
                         (event, callback) => {
                             socket.on(event, async (...args) => {
                                 const cb = args.pop();
-                                let result = await callback(...args);
+                                const ctx = {socket, event};
+                                let result = await callback.call(ctx, ...args);
                                 cb(result);
                             })
                         },
