@@ -221,7 +221,6 @@ module.exports = (On, Log, Query, Conf, Util, Storage) => {
 - `On(event, handler)`<br>Registers an event handler at the socket.io instance
 	- `event` Name of the event the server should listen to
 	- `handler(data)` Handler function that returns the response sent back to the requesting client.
-- `Storage` A socket unique storage object 
 - *All other fields identical to api.js*
 
 

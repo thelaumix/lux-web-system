@@ -97,24 +97,27 @@ module.exports = (Conf, options = {}) => {
              */
             io.on("connection", (socket) => {
 
-                const SOCK_STORAGE = {};
+                const SOCK_OPTIONS = {socket, io};
                 
                 try {
                     require(P_SOCK)(
                         // Sending just mere copies of the fields to prevent overwriting the internal fields
                         (event, callback) => {
+                            if (event == 'disconnect') {
+                                socket.on('disconnect', callback)
+                                return;
+                            }
                             socket.on(event, async (...args) => {
                                 const cb = args.pop();
-                                const ctx = {socket, event};
-                                let result = await callback.call(ctx, ...args);
+                                let result = await callback.call(socket, ...args);
                                 cb(result);
                             })
                         },
                         (...args) => {WebLog(Color.FgYellow + "SOCKET", ...args)}, 
-                        () => $.Query(...arguments), 
-                        {...$.Conf}, 
-                        {...Util},
-                        SOCK_STORAGE
+                        $.Query, 
+                        $.Conf, 
+                        Util,
+                        SOCK_OPTIONS
                     );
                 } catch (e) {
                     WebLog(Color.BgRed + Color.FgBlack + "SOCKET Initialization error" + Color.Reset);
