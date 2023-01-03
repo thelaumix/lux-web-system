@@ -123,7 +123,7 @@ class PluginRegisterHelper {
                     // Trigger save session if enabled
                     if (req.session) req.session.Save();
                 })
-                $.PluginAPI[method.toLowerCase()](path, ...cbs);
+                $.PluginAPI[method.toLowerCase()](path, $.CorsFunction, ...cbs);
                 Lg("Registered API endpoint on", Color.FgMagenta + `(${method.toUpperCase()}) /@${path}`);
                 return true;
             } catch (e) {

@@ -233,6 +233,7 @@ module.exports = (Conf, options = {}) => {
 
         PLUGIN_API.use(corsFunc);
         $.PluginAPI = PLUGIN_API;
+        $.CorsFunction = corsFunc;
     
         /**
          * Routing dynamic router instance to /api
