@@ -202,6 +202,23 @@ module.exports = (Conf, options = {}) => {
 
     //#region API Functionator
 
+        const corsFunc = cors({
+            origin: "https://" + options.api_cors,
+            credentials: true,
+            methods: [
+                'GET',
+                'POST',
+                'PUT',
+                'PATCH',
+                'DELETE',
+                'HEAD',
+                'OPTIONS'
+            ],
+            allowedHeaders: [
+                'Content-Type',
+            ]
+        })
+
         /**
          * Initial API router
          */
@@ -214,6 +231,7 @@ module.exports = (Conf, options = {}) => {
             })
         })
 
+        PLUGIN_API.use(corsFunc);
         $.PluginAPI = PLUGIN_API;
     
         /**
@@ -249,22 +267,7 @@ module.exports = (Conf, options = {}) => {
              * CORS Setup. Allow cross-origin-calls from defined host address
              */
             if (typeof options.api_cors === 'string') {
-                ROUTE_API.use(cors({
-                    origin: "https://" + options.api_cors,
-                    credentials: true,
-                    methods: [
-                        'GET',
-                        'POST',
-                        'PUT',
-                        'PATCH',
-                        'DELETE',
-                        'HEAD',
-                        'OPTIONS'
-                    ],
-                    allowedHeaders: [
-                        'Content-Type',
-                    ]
-                }));
+                ROUTE_API.use(corsFunc);
                 WebLog("Using API-Cors Origin", Color.FgCyan + "https://" + options.api_cors + Color.Reset)
             }
 
