@@ -14,13 +14,14 @@ const LxWebApplication = options => {
 
     //#region Imports
 
-    const {Log, Color}  = require('./system/console.js'),
-          Config        = require('./system/config.js'),
-          CreateSql     = require('./system/sql.js'),
-          WebSystem     = require('./system/websys.js'),
-          {Assign}      = require('./system/utils.js'),
+    const {Log, Color}  = require('./system/console'),
+          Config        = require('./system/config'),
+          CreateSql     = require('./system/sql'),
+          WebSystem     = require('./system/websys'),
+          Plugins       = require('./system/plugins'),
+          {Assign}      = require('./system/utils'),
           {dirname}     = require('path'),
-          $             = require('./system/lane.js'),
+          $             = require('./system/lane'),
           fs            = require('fs'),
           ROOT_DIR      = dirname(require.main.filename);
 
@@ -58,16 +59,22 @@ const LxWebApplication = options => {
             server: {
                 port: 8080,
                 frontend: '/web',
-                endpoint: '/api'
+                endpoint: '/api',
+                middlewares: []
             },
             api_cors : false,
-            ddos: {
+            /*ddos: {
                 weight: 1,
-                maxWeidht: 10,
-                checkInterval: 1000,
-                rules: []
+                maxWeight: 10,
+                checkInterval: 1000
             },
-            template_fields: {}
+            rate_limiter: {
+                type: 'memory',     // none, memory, redis, memcache, mongo, mysql, postres, cluster, union, queue
+                points: 6,          // 6 points
+                duration: 1,        // Per second
+            },*/
+            template_fields: {},
+            plugins: []
         }, options || {})
 
         OPTIONS.directories.config    = ROOT_DIR + OPTIONS.directories.config
@@ -125,13 +132,14 @@ const LxWebApplication = options => {
                     frontend: OPTIONS.server.frontend,
                     endpoint: OPTIONS.server.endpoint
                 },
+                middlewares: OPTIONS.server.middlewares,
                 workspace: OPTIONS.directories.workspace,
                 port: OPTIONS.server.port,
                 api_cors: OPTIONS.api_cors,
                 session: OPTIONS.session,
                 session_expire_time: OPTIONS.session_expire_time,
                 session_domain: OPTIONS.session_domain,
-                ddos: OPTIONS.ddos,
+                rate_limiter: OPTIONS.rate_limiter,
                 template_fields: OPTIONS.template_fields
             });
             // Put webserver on lane
@@ -151,7 +159,8 @@ const LxWebApplication = options => {
             this._exitedOnce = true;
             console.log("\n")
 
-            await SQL.Close();
+            if (SQL && typeof SQL.Close === 'function')
+                await SQL.Close();
             if (exitCode || exitCode === 0) Log(ENV_NAME, "Exit with code " + exitCode);
             Log(ENV_NAME, "PROGRAM QUITTING");
             process.exit();
@@ -170,9 +179,7 @@ const LxWebApplication = options => {
         Conf: {...Conf},
         Log: (...args) => Log(...args),
         Color: {...Color},
-        Use: () => {
-            Log(ENV_NAME, "The Use() middleware support is currently disabled due to maintanance issues. May be reenabled in future updates.")
-        }
+        Use: (plugin, permissions) => Plugins.Register(plugin, permissions, OPTIONS.workspace)
     };
 };
 

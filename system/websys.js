@@ -4,19 +4,20 @@ const express       = require('express'),
       cors          = require('cors'),
       bodyParser    = require('body-parser'),
       path          = require('path'),
-      {Log, Color}  = require('./console.js'),
-      Util          = require('./utils.js'),
       glob          = require('glob'),
-      $             = require('./lane.js'),
+      {Log, Color}  = require('./console'),
+      Util          = require('./utils'),
+      Plugins       = require('./plugins'),
+      $             = require('./lane'),
       minify        = require('@node-minify/core'),
-      ddos          = require("ddos-express"),
       uuid          = require('uuid').v1,
       COMPRESSORS = {
             js:     require('@node-minify/terser'),
             css:    require('@node-minify/clean-css')
       }
 
-const METHODS_ALLOWED   = ['get', 'post', 'put', 'patch', 'delete', 'all'];
+const METHODS_ALLOWED   = ['get', 'post', 'put', 'patch', 'delete', 'all', 'use'];
+$.MethodsAllowed = METHODS_ALLOWED;
 
 function WebLog(...args) {
     Log(Color.FgRed + "WebSystem", ...args);
@@ -27,8 +28,8 @@ function WebLog(...args) {
  * @param {object} options Options for the server
  * @param {string} options.cert Path to the SSL certificate file
  * @param {string} options.key Path to the SSL private key file
- * @param {string} options.ddos DDOS options
  * @param {string} options.template_fields Template parsing fields
+ * @param {Array<function>} options.middlewares Array of middleware functions to assign on global scope
  */
 module.exports = (Conf, options = {}) => {
     //#region Initialization
@@ -46,7 +47,63 @@ module.exports = (Conf, options = {}) => {
         
         WebLog("Server running on port", port);
 
-        const ddosFunc = ddos(options.ddos);
+        //const rlimFunc = (new ddos(options.ddos)).express('ip_dedicated', 'path');
+
+
+        const pjson = require('../package.json');
+        const VSTRING = `${$.ENV_NAME}/LUX Web System/${pjson.version} (${process.platform})`;
+
+        // Assign the root middlewares
+        for(const mw of options.middlewares) {
+            try {
+                app.use(mw);
+            } catch (e) {
+                WebLog("Failed to register middleware:", e.message);
+                console.error(e);
+            }
+        }
+
+        /**
+         * Dedicated versioning and DDOS Protection IP reformat middleware
+         */
+        const DedicatedMiddleware = (req, res, next) => {
+
+
+            // Custom middleware iterator
+            const middlewares = Plugins.Middlewares;
+            let mwPointer = -1;
+            const moveNext = () => {
+                mwPointer++;
+                if (mwPointer >= middlewares.length) {
+                    // Plugin middlewares are done, now do the final touches
+
+                    // Checking for client IP / Proxy Handling
+                    const fwfor = req.header('x-forwarded-for');
+                    if (fwfor) {
+                        req.ip_dedicated = fwfor;
+                    } else {
+                        req.ip_dedicated = req.ip;
+                    }
+
+                    // Updating header information containing server data
+                    res.header('server', VSTRING);
+                    res.header('x-powered-by', VSTRING);
+                    next();
+                }
+                else {
+                    const mw = middlewares[mwPointer];
+                    try {
+                        mw(req, res, moveNext);
+                    } catch (e) {
+                        WebLog('A plugin-registered middleware threw an exception:', e);
+                        moveNext();
+                    }
+                }
+            }
+            moveNext();
+        };
+        app.use(DedicatedMiddleware)
+
 
     //#endregion
 
@@ -63,7 +120,8 @@ module.exports = (Conf, options = {}) => {
         if (!fs.existsSync(WS_ENDP))  fs.mkdirSync(WS_ENDP);
         if (!fs.existsSync(WS_FRONT)) fs.mkdirSync(WS_FRONT);
         if (!fs.existsSync(WS_FRONT + "html/")) fs.mkdirSync(WS_FRONT + "html/");
-        if (!fs.existsSync(WS_FRONT + "html/index.html")) fs.writeFileSync(WS_FRONT + "html/index.html", "This is the frontend");
+        if (!fs.existsSync(WS_FRONT + "html/index.html")) 
+            fs.writeFileSync(WS_FRONT + "html/index.html", fs.readFileSync(template_path + "/index.html"));
         if (!fs.existsSync(WS_FRONT + "js/")) fs.mkdirSync(WS_FRONT + "js/");
         if (!fs.existsSync(WS_FRONT + "css/")) fs.mkdirSync(WS_FRONT + "css/");
         if (!fs.existsSync(WS_FRONT + "img/")) fs.mkdirSync(WS_FRONT + "img/");
@@ -100,6 +158,17 @@ module.exports = (Conf, options = {}) => {
                 const SOCK_OPTIONS = {socket, io};
                 
                 try {
+
+                    // Load plugin socket commands first, to be overwritten by the main application
+                    for(const command in Plugins.RegSockets) {
+                        const callback = Plugins.RegSockets[command];
+                        socket.on(command, async (...args) => {
+                            const cb = args.pop();
+                            let result = await callback.call(SOCK_OPTIONS, ...args);
+                            cb(result);
+                        })
+                    }
+
                     require(P_SOCK)(
                         // Sending just mere copies of the fields to prevent overwriting the internal fields
                         (event, callback) => {
@@ -113,7 +182,7 @@ module.exports = (Conf, options = {}) => {
                                 cb(result);
                             })
                         },
-                        (...args) => {WebLog(Color.FgYellow + "SOCKET", ...args)}, 
+                        (...args) => {WebLog(Color.FgYellow + "SOCKET ::" + Color.Reset, ...args)}, 
                         $.Query, 
                         $.Conf, 
                         Util,
@@ -136,17 +205,25 @@ module.exports = (Conf, options = {}) => {
         /**
          * Initial API router
          */
-        var ROUTE_API = express.Router();
+        let ROUTE_API = express.Router();
+        let PLUGIN_API = express.Router();
         ROUTE_API.all("/*", function(req, res) {
             res.status(400).json({
                 info: "LUX Web Systems API",
                 message: "Not loaded yet"
             })
         })
+
+        $.PluginAPI = PLUGIN_API;
     
         /**
          * Routing dynamic router instance to /api
          */
+
+        app.use(options.paths.endpoint + "/@", (req, res, next) => {
+            res.header('Content-Type', 'application/json')
+            PLUGIN_API(req, res, next);
+        })
         app.use(options.paths.endpoint, (req, res, next) => {
             res.header('Content-Type', 'application/json')
             ROUTE_API(req, res, next);
@@ -166,7 +243,6 @@ module.exports = (Conf, options = {}) => {
             WebLog("Loading API endpoints...")
             // Reset router
             ROUTE_API = express.Router();
-            ROUTE_API.use(ddosFunc);
             ROUTE_API.use(bodyParser.json());
 
             /**
@@ -223,12 +299,27 @@ module.exports = (Conf, options = {}) => {
                     return false;
                 }
 
+                if (method == 'use' && cbs.length == 0 && typeof path === 'function') {
+                    cbs.push(path);
+                    path = '::global::';
+                } 
+
                 // Try to set up provided information on API router
                 try {
                     const cbLast = cbs.pop();
                     cbs.push(async (req, res) => {
                         // Awaiting the provided callback
-                        await cbLast(req, res);
+                        try {
+                            await cbLast(req, res);
+                        } catch (e) {
+                            WebLog(Color.BgRed + Color.FgBlack + "Failed to execute API " + Color.Reset);
+                            console.error(e);
+                            res.status(500).json({
+                                error: 500,
+                                info: $.ENV_NAME + " API",
+                                message: "Internal server error"
+                            })
+                        }
                         // Trigger save session if enabled
                         if (req.session) req.session.Save();
                     })
@@ -252,7 +343,7 @@ module.exports = (Conf, options = {}) => {
                 require(P_API)(
                     // Sending just mere copies of the fields to prevent overwriting the internal fields
                     (...args) => RegisterApi(...args),
-                    (...args) => {WebLog(Color.FgYellow + "API", ...args)}, 
+                    (...args) => {WebLog(Color.FgYellow + "API ::" + Color.Reset, ...args)}, 
                     $.Query,
                     {...$.Conf}, 
                     {...Util},
@@ -344,7 +435,7 @@ module.exports = (Conf, options = {}) => {
         /**
          * Routing web frontend file manager to /web directive
          */
-         app.use(options.paths.frontend, ddosFunc, async (req, res, next) => {
+         app.use(options.paths.frontend, async (req, res, next) => {
             let pth = req.path.substring(1),
                 waspl = pth.split(':'),
                 finpath = WS_FRONT,
@@ -386,13 +477,36 @@ module.exports = (Conf, options = {}) => {
              * @param {string} target Filename to search 
              */
             const ParseGlobal = async (target) => {
-                let tsplit = target.split('.');
-                const file_pattern = `/${tsplit[tsplit.length -1]}/${tsplit[0]}.*?(.)${tsplit[tsplit.length -1]}`,
-                      templateFile = tmpdir + `/${tsplit[0]}.${tsplit[tsplit.length -1]}`;
-                // Look for the requested files in the frontend folder
-                let flist = glob.sync(file_pattern, {
-                    root: WS_FRONT
-                })
+                let forepath = "";
+                let templateFile, flist = [];
+                const tsplit = target.split('.');
+
+                if (tsplit[0].startsWith('@')) {
+                    // Target plugin file
+                    const pluginname = tsplit[0].substring(1);
+                    const ftype = tsplit[tsplit.length - 1];
+                    const typelist = ((Plugins.Registered[pluginname] || {}).frontend_files || {})[ftype] || []
+                    if (typelist.length > 0) {
+                        flist = typelist;
+                        forepath = "..plugins";
+                        templateFile = tmpdir + `/..plugins/${target}`;
+                    }
+                } else {
+                    const forepath_split = tsplit[0].split('/');
+
+                    for(let i=0; i<forepath_split.length - 1; i++) {
+                        if (forepath) forepath += "/";
+                        forepath += forepath_split[i];
+                    }
+
+                    const file_pattern = `/${tsplit[tsplit.length -1]}/${tsplit[0]}.*?(.)${tsplit[tsplit.length -1]}`;
+                    templateFile = tmpdir + `/${tsplit[0]}.${tsplit[tsplit.length -1]}`;
+
+                    // Look for the requested files in the frontend folder
+                    flist = glob.sync(file_pattern, {
+                        root: WS_FRONT
+                    })
+                }
 
                 if (flist.length <= 0) {
                     finpath = false;
@@ -406,9 +520,11 @@ module.exports = (Conf, options = {}) => {
                     if (youngest < y) youngest = y;
                 }
 
+                const tmpdir_full = tmpdir + (forepath ? `/${forepath}` : '');
+
                 // If no tempfile existing or temp is older than youngest subfile
                 if (!fs.existsSync(templateFile) || fs.statSync(templateFile).mtimeMs < youngest) {
-                    if (!fs.existsSync(tmpdir)) fs.mkdirSync(tmpdir)
+                    if (!fs.existsSync(tmpdir_full)) fs.mkdirSync(tmpdir_full, { recursive: true })
 
                     // Create temporary template-rendered file
                     const tempfile_name = tmpdir + `/${uuid()}`;
@@ -447,13 +563,20 @@ module.exports = (Conf, options = {}) => {
 
             // Serve the socket.io root file
             if (pth == 'js:lux.js') {
-                let buf  = fs.readFileSync(path.resolve(__dirname + '/../resource/lux.js'), 'utf-8') + "\n";
+                let buf  = fs.readFileSync(path.resolve(__dirname + '/../resource/lux.js'), 'utf-8')
+                    .replace(/\{\{plugin_array\}\}/ig, Plugins.GetFrontendString())
+                    .replace(/\{\{path_frontend\}\}/ig, options.paths.frontend)
+                    .replace(/\{\{path_endpoint\}\}/ig, options.paths.endpoint)
+                    
+                    + "\n";
                     buf += fs.readFileSync(path.resolve(__dirname + '/../resource/socket.io.min.js'), 'utf-8') + "\n";
                     buf += fs.readFileSync(path.resolve(__dirname + '/../resource/jquery.col.js'), 'utf-8');
                 res.header("Content-type", "application/javascript");
                 res.header("Content-length", buf.length);
-                res.header("Cache-Control", "max-age=604800");
-                res.header("Age", "0");
+                //res.header("Cache-Control", "max-age=604800");
+                res.header("Cache-Control", "max-age=3600");
+                //res.header("Cache-Control", "no-cache");
+                //res.header("Age", "0");
                 res.send(buf);
                 return;
             }

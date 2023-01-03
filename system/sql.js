@@ -1,6 +1,6 @@
 // Imports
-const {Log, Color}  = require('./console.js'),
-      {UID}         = require('./utils.js'),
+const {Log, Color}  = require('./console'),
+      {UID}         = require('./utils'),
       mysql         = require('mysql');
 
 // Primary statics

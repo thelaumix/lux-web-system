@@ -1,9 +1,9 @@
-const $             = require('./lane.js'),
+const $             = require('./lane'),
       uuid          = require('uuid').v1,
       fs            = require('fs'),
       path          = require('path'),
-      {Log, Color}  = require('./console.js'),
-      Util          = require('./utils.js');
+      {Log, Color}  = require('./console'),
+      Util          = require('./utils');
 
 /**
  * Session Log function
