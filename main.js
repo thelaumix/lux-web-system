@@ -179,7 +179,7 @@ const LxWebApplication = options => {
         Conf: {...Conf},
         Log: (...args) => Log(...args),
         Color: {...Color},
-        Use: (plugin, permissions) => Plugins.Register(plugin, permissions, OPTIONS.workspace)
+        Use: (plugin, permissions) => Plugins.Register(plugin, permissions, OPTIONS.directories.workspace)
     };
 };
 
