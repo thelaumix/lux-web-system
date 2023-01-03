@@ -182,7 +182,7 @@ const CalculatePluginString = () => {
     for(const name in REGISTERED_FRONTEND) {
         if (FrontendString) FrontendString += ",";
         const v = REGISTERED_FRONTEND[name];
-        FrontendString += `${name}:${v}`;
+        FrontendString += `'${name}':${v}`;
     }
 }
 let FrontendString = "";
