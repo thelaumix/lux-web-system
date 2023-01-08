@@ -1,7 +1,7 @@
 
 # LUX Web System
 
-Entirely node.js based web framework including REST API and socket.io support, script compression and SQL integration. AND: Newly added plugin support.
+Entirely node.js based web framework including REST API and socket.io support, script compression and SQL integration. AND: Newly added plugin support and SQL pooling.
 
 ## Basic Usage
 
@@ -57,7 +57,10 @@ const {Query, Conf, Log, Color, Use} = LxWebApplication(options);
 
 The application initializer will create all directories needed and furthermore returns some useful functions to interact with the running server. These functions are:
 
-- `Query` <br>Promise-based SQL caller. This is using the managed SQL connection created within the application and returns a Promise resolving into the call result.<br>**Usage**: `Query(query_string, fields)`
+- `Query` <br>Promise-based SQL caller. This is using the managed SQL connection pool created within the application and returns a Promise resolving into the call result.<br>**Usage**: `Query(query_string, fields)`
+	- `Query.GetConnection()`<br>Promise-based. Returns a dedicated, free connection from the SQL pool (`Connection`).
+		- `Connection()` Identical to `Query()`, but using the dedicated connection instead of a randomly free connection every time (like `Query()` does)
+		- `Connection.Release()` **IMPORTANT:** Release the connection after using it, so it can be reused.
 - `Conf` <br>Configuration holder. Contains all configuration elements named by the pattern defined in the `configs`-section within the options object (Case Sensitive)<br>For example the "program.yml" configuration from the default options will be accessible at `Conf.Program`
 - `Log` <br>Strongly recommended to use this instead of `console.log`.<br>**Usage**: `Log(env_name, ...args)`
 - `Color` <br>Console color holder. See reference for more.
@@ -80,7 +83,8 @@ The following options are available to modify the initializer of LxWebApplicatio
 - `directories` *: Object*
   - `config` *: string* <br>Root-relative path of the folder the config files will be stored in. Has to end with **/**
   - `workspace` *: string* <br>Root-relative path of the folder the endpoint and frontend folders will be placed. Has to end with **/**
-- `sql` *: Object* - Defaults to `false`, meaning no SQL manager will be loaded. Once an object is submitted, it will overwrite the defaults
+- `sql` *: Object* - Defaults to `false`, meaning no SQL manager will be loaded and `Query` will not be working. Once an object is submitted, it will overwrite the defaults
+  - `connectionLimit` *:number* . Defazkts to `60`<br>The maximum number of connections managed by the connection pool
   - `host` *: string* - Defaults to `localhost`<br>SQL server host
   - `user` *: string* - Defaults to `root`<br>SQL username
   - `password` *: string* - Defaults to `root`<br>SQL user password
