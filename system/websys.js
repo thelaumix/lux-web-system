@@ -264,6 +264,8 @@ module.exports = (Conf, options = {}) => {
             ROUTE_API = express.Router();
             ROUTE_API.use(bodyParser.json());
 
+            const apiAfterCalls = [];
+
             /**
              * CORS Setup. Allow cross-origin-calls from defined host address
              */
@@ -294,7 +296,7 @@ module.exports = (Conf, options = {}) => {
              * @param {function} cbs Callbacks (req, res, next)
              * @returns {boolean} If registration process was successful
              */
-            function RegisterApi(method, path, ...cbs) {
+            const RegisterApi = (method, path, ...cbs) => {
                 // Check for integrity of target method
                 if (typeof method !== 'string' || METHODS_ALLOWED.indexOf(method.toLowerCase()) < 0) {
                     WebLog("Could not register API endpoint of method " + 
@@ -326,6 +328,15 @@ module.exports = (Conf, options = {}) => {
                         }
                         // Trigger save session if enabled
                         if (req.session) req.session.Save();
+
+                        // Call registered API-AFTER-Handlers
+                        for(const cb of apiAfterCalls) {
+                            try {
+                                cb(req, res);
+                            } catch (e) {
+                                console.error("API After Error:", e);
+                            }
+                        }
                     })
                     ROUTE_API[method.toLowerCase()](path, ...cbs);
                     WebLog("API: Registered", Color.FgGreen + method.toLowerCase() + Color.Reset, "on", Color.FgMagenta + path + Color.Reset);
@@ -335,6 +346,15 @@ module.exports = (Conf, options = {}) => {
                     WebLog(Color.BgRed + Color.FgBlack + "Failed to register API " + Color.Reset);
                     console.error(e);
                     return false;
+                }
+            }
+
+            RegisterApi.After = (cb) => {
+                if (typeof cb === 'function') {
+                    apiAfterCalls.push(cb);
+                    WebLog("API After Registered:", cb.name);
+                } else {
+                    throw new Error('API After has to be a function')
                 }
             }
 

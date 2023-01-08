@@ -222,6 +222,7 @@ module.exports = (On, Log, Query, Conf, Util, Emit) => {
   - `method` The HTTP method that should be listened to
   - `path` express-pattern matched path
   - `... handler(req, res[, next])` express.js handler / middlewares
+- `On.After(callback)`<br>Will register a callback that will be executed *after* any actual API endpoint handlers are executed. You can see this as a late-in-time-middleware, that will be executed after all API requests are finished.<br>Please notice that any registered callbacks of this kind will **always** be executed on **any** API call.
 - `Log(...args)`<br>Web framed logger
 - `Query` <br>Identical with `LxWebApplication.Query`
   - `.UID(table, ?length, ?fieldname, ?charset])` Generates a random ID on a table fields in the SQL database
