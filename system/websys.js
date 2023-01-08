@@ -358,6 +358,9 @@ module.exports = (Conf, options = {}) => {
                 }
             }
 
+            const _On = (...args) => RegisterApi(...args);
+            _On.After = (cb) => RegisterApi.After(cb);
+
             /**
              * Registering JS API Resolvables
              */
@@ -366,7 +369,7 @@ module.exports = (Conf, options = {}) => {
                 // return;
                 require(P_API)(
                     // Sending just mere copies of the fields to prevent overwriting the internal fields
-                    (...args) => RegisterApi(...args),
+                    _On,
                     (...args) => {WebLog(Color.FgYellow + "API ::" + Color.Reset, ...args)}, 
                     $.Query,
                     {...$.Conf}, 
