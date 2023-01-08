@@ -116,11 +116,12 @@ class SQL {
          * @param {string} charset Character Setmap
          * @returns {Promise<string>} Resolves in new unique identifier
          */
-        this.Query.UID = async (table, length = 30, fieldname = 'id', charset = null) => {
+        this.Query.UID = async (table, length = 30, fieldname = 'id', charset = null, Pool = null) => {
             let id = null;
+            if (Pool == null) Pool = root.Query;
             do {
                 id = UID(length, charset);
-                let $check = (await root.Query('SELECT '+fieldname+' FROM '+table+' WHERE '+fieldname+' = ?', [id]));
+                let $check = (await Pool('SELECT '+fieldname+' FROM '+table+' WHERE '+fieldname+' = ?', [id]));
                 if ($check.length > 0) id = null;
             } while (id == null)
             return id;
