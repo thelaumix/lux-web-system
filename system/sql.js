@@ -87,9 +87,12 @@ class SQL {
                      * @returns {Promise<any>|null} Resolves to the query result or NULL if closed.
                      */
                     const PoolQuery = (query, params) => {
-                        if (released) throw new Error('Pooled connection has already been released.');
-                        
-                        GetQueryPromise(connection, query, params);
+                        if (released) {
+                            return new Promise((req, res) => {
+                                rej('Pooled connection has already been released.');
+                            })
+                        }
+                        return GetQueryPromise(connection, query, params);
                     }
 
                     /**
